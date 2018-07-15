@@ -1,4 +1,4 @@
-(() => {
+((utils) => {
   // GCO = global compositing operation
   const GCO_DATA = {
     types: [
@@ -111,7 +111,7 @@
     return canvas;
   };
 
-  const drawResult = (existingContentCanvas, newContentCanvas, width, height, gcoType) => {
+  const drawCombinedResult = (existingContentCanvas, newContentCanvas, width, height, gcoType) => {
     const canvas = createCanvas(width, height);
 
     const ctx = canvas.getContext('2d');
@@ -131,31 +131,61 @@
     return canvas;
   };
 
-  const runComposite = (existingContentCanvas, newContentCanvas, width, height) => {
-    const dl = document.createElement('dl');
-    document.body.appendChild(dl);
-
-    while(GCO_DATA.types.length) {
-      const gcoType = GCO_DATA.types.pop();
-      const dt = document.createElement('dt');
-      dt.textContent = gcoType;
-      dl.appendChild(dt);
-      const dd = document.createElement('dd');
-      const p = document.createElement('p');
-      p.textContent = GCO_DATA.texts.pop();
-      dd.appendChild(p);
-
-      const canvasToDrawOn = drawExisting(existingContentCanvas, width, height)
-      const canvasToDrawFrom = drawNewContent(newContentCanvas, width, height);
-      const canvasToDrawResult = drawResult(existingContentCanvas, newContentCanvas, width, height, gcoType);
-
-      dd.appendChild(canvasToDrawOn);
-      dd.appendChild(canvasToDrawFrom);
-      dd.appendChild(canvasToDrawResult);
-
-      dl.appendChild(dd);
-    }
+  const newGcoLabel = (gcoType) => {
+    const dt = document.createElement('dt');
+    dt.textContent = gcoType;
+    return dt;
   };
 
-  window.runComposite = runComposite;
-})();
+  const initExistingAndNewCanvas = (width, height) => {
+    const existingContentCanvas = createCanvas(width * 2, height * 2);
+    utils.colorSphere(existingContentCanvas);
+
+    const newContentCanvas = createCanvas(width * 2, height * 2);
+    utils.mixLight(newContentCanvas);
+
+    return { existingContentCanvas, newContentCanvas };
+  };
+
+  const newGcoDetails = (gcoType, gcoText, width, height) => {
+    const dd = document.createElement('dd');
+
+    const p = document.createElement('p');
+    p.textContent = gcoText;
+    dd.appendChild(p);
+
+    const {
+      existingContentCanvas,
+      newContentCanvas,
+    } = initExistingAndNewCanvas(width, height);
+
+    const canvasToDrawOn = drawExisting(existingContentCanvas, width, height)
+    const canvasToDrawFrom = drawNewContent(newContentCanvas, width, height);
+    const canvasToDrawResult = drawCombinedResult(existingContentCanvas, newContentCanvas, width, height, gcoType);
+
+    dd.appendChild(canvasToDrawOn);
+    dd.appendChild(canvasToDrawFrom);
+    dd.appendChild(canvasToDrawResult);
+
+    return dd;
+  }
+
+  const compositeList = (width, height) => {
+    const dl = document.createElement('dl');
+
+    for (let i = GCO_DATA.types.length - 1; i >= 0; i--) {
+      const gcoType = GCO_DATA.types[i];
+      const gcoText = GCO_DATA.texts[i];
+
+      const dt = newGcoLabel(gcoType)
+      dl.appendChild(dt);
+
+      const dd = newGcoDetails(gcoType, gcoText, width, height);
+      dl.appendChild(dd);
+    }
+
+    return dl;
+  };
+
+  window.compositeList = compositeList;
+})({ colorSphere: window.colorSphere, mixLight: window.mixLight });
